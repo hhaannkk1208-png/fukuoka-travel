@@ -52,43 +52,4 @@
 
     <main class="px-6 mt-6">
         <div class="flex gap-8 mb-6 border-b border-gray-100">
-            <button @click="activeTab = 'itinerary'" :class="activeTab === 'itinerary' ? 'border-b-2 border-[#78a3a3] text-gray-800 font-bold' : 'text-gray-400'" class="pb-3 px-1 text-sm transition-all">行程清單</button>
-            <button @click="activeTab = 'split'" :class="activeTab === 'split' ? 'border-b-2 border-[#78a3a3] text-gray-800 font-bold' : 'text-gray-400'" class="pb-3 px-1 text-sm transition-all">消費分帳</button>
-        </div>
-
-        <div v-show="activeTab === 'itinerary'" class="space-y-6">
-            <div v-for="(item, index) in currentDayItinerary" :key="index" class="item-card bg-white p-5 rounded-3xl shadow-sm border border-gray-50 relative">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center gap-2">
-                        <i class="far fa-clock text-[#78a3a3] text-xs"></i>
-                        <input v-model="item.time" type="time" class="text-sm font-bold text-[#78a3a3] bg-transparent border-none p-0 focus:ring-0">
-                    </div>
-                    <button @click="removeSchedule(index)" class="text-gray-200 hover:text-red-300">
-                        <i class="fas fa-times-circle"></i>
-                    </button>
-                </div>
-                <input v-model="item.location" placeholder="輸入地點名稱..." class="w-full text-lg font-medium mb-4 border-none p-0 focus:ring-0 placeholder-gray-200">
-                <div class="flex gap-3 mt-2">
-                    <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-gray-50 text-gray-500 text-center text-xs font-bold hover:bg-gray-100 transition-all">地圖</a>
-                    <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-[#78a3a3] text-white text-center text-xs font-bold shadow-sm hover:opacity-90 transition-all">導航</a>
-                </div>
-            </div>
-            <button @click="addSchedule" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl text-gray-300 text-sm hover:border-[#78a3a3] hover:text-[#78a3a3] transition-all bg-white/50">
-                + 新增行程地點
-            </button>
-        </div>
-
-        <div v-show="activeTab === 'split'" class="space-y-4">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-teal-50 text-center">
-                <p class="text-[10px] text-[#78a3a3] font-bold tracking-[0.2em] mb-4 uppercase">結算摘要</p>
-                <div v-if="splitResults.length > 0" class="space-y-4">
-                    <div v-for="res in splitResults" class="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
-                        <span>{{ res.from }} → {{ res.to }}</span>
-                        <span class="font-bold text-[#78a3a3]">¥ {{ Math.round(res.amount).toLocaleString() }}</span>
-                    </div>
-                </div>
-                <p v-else class="text-gray-300 text-xs">目前無消費</p>
-            </div>
-            <div v-for="(exp, index) in expenses" :key="index" class="bg-white p-5 rounded-2xl flex items-center gap-3 shadow-sm">
-                <input v-model="exp.payer" placeholder="誰付錢" class="w-20 text-sm border-none p-0 focus:ring-0 font-bold">
-                <input v-model.number="exp.amount" type="number" placeholder="金額" class="flex-1 text-sm border-none p-0 focus:ring-0 text-[#78a3a3] font-bold
+            <button @click="activeTab = 'itinerary'" :
