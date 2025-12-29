@@ -67,4 +67,211 @@
                 <div class="flex justify-between items-start mb-3">
                     <div class="flex items-center gap-2">
                         <i class="far fa-clock text-[#78a3a3] text-xs"></i>
-                        <input v-model="item.time" type="time" class="text-sm font-bold text-[#78a3a3] bg
+                        <input v-model="item.time" type="time" class="text-sm font-bold text-[#78a3a3] bg-transparent border-none p-0 focus:ring-0">
+                    </div>
+                    <button @click="removeSchedule(index)" class="text-gray-200 hover:text-red-300">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                </div>
+                <input v-model="item.location" placeholder="輸入地點名稱..." class="w-full text-lg font-medium mb-4 border-none p-0 focus:ring-0 placeholder-gray-200">
+                <div class="flex gap-3">
+                    <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-gray-50 text-gray-500 text-center text-xs font-bold hover:bg-gray-100">地圖</a>
+                    <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-[#78a3a3] text-white text-center text-xs font-bold shadow-sm">導航</a>
+                </div>
+            </div>
+            <button @click="addSchedule" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl text-gray-300 text-sm bg-white/50">+ 新增行程地點</button>
+        </div>
+
+        <div v-show="activeTab === 'split'" class="space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-teal-50 text-center">
+                <p class="text-[10px] text-[#78a3a3] font-bold tracking-[0.2em] mb-4 uppercase">結算摘要</p>
+                <div v-if="splitResults.length > 0" class="space-y-4">
+                    <div v-for="res in splitResults" class="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
+                        <span>{{ res.from }} → {{ res.to }}</span>
+                        <span class="font-bold text-[#78a3a3]">¥ {{ Math.round(res.amount).toLocaleString() }}</span>
+                    </div>
+                </div>
+                <p v-else class="text-gray-300 text-xs">目前無消費紀錄</p>
+            </div>
+            <div v-for="(exp, index) in expenses" :key="index" class="bg-white p-5 rounded-2xl flex items-center gap-3 shadow-sm">
+                <input v-model="exp.payer" placeholder="誰付錢" class="w-20 text-sm border-none p-0 focus:ring-0 font-bold">
+                <input v-model.number="exp.amount" type="number" placeholder="金額" class="flex-1 text-sm border-none p-0 focus:ring-0 text-[#78a3a3] font-bold">
+                <button @click="removeExpense(index)" class="text-gray-200"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <button @click="addExpense" class="w-full py-4 text-[#78a3a3] text-xs font-bold">+ 新增消費</button>
+        </div>
+    </main>
+
+    <div v-if="showInitModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <i class="fas fa-plane-departure text-[#78a3a3] text-3xl mb-3"></i>
+                <h2 class="text-xl font-bold text-gray-800">開啟新旅程</h2>
+                <p class="text-xs text-gray-400">請設定您的旅行基本資訊</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">目的地</label>
+                    <input v-model="tripInfo.destination" type="text" placeholder="例如：福岡、東京..." 
+                           class="w-full mt-1 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#78a3a3]/30">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">出發日期</label>
+                    <input v-model="tripInfo.startDate" type="date" 
+                           class="w-full mt-1 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#78a3a3]/30">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">旅行天數 ({{tripInfo.totalDays}}天)</label>
+                    <input v-model.number="tripInfo.totalDays" type="range" min="1" max="14" 
+                           class="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#78a3a3] mt-4">
+                </div>
+            </div>
+            <button @click="confirmInit" class="w-full mt-8 py-4 bg-[#78a3a3] text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
+                開始規劃
+            </button>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md glass-nav rounded-[2.5rem] px-10 py-4 flex justify-between items-center shadow-2xl border border-white">
+        <button @click="activeTab = 'itinerary'" :class="activeTab === 'itinerary' ? 'text-[#78a3a3]' : 'text-gray-300'"><i class="fas fa-route text-xl"></i></button>
+        <button @click="saveData" class="w-14 h-14 bg-[#78a3a3] rounded-full text-white flex items-center justify-center -translate-y-6 shadow-lg active:scale-95 transition-all">
+            <i class="fas fa-save text-lg"></i>
+        </button>
+        <button @click="activeTab = 'split'" :class="activeTab === 'split' ? 'text-[#78a3a3]' : 'text-gray-300'"><i class="fas fa-wallet text-xl"></i></button>
+    </nav>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKuVoCeTm9_ixV0SP8sLj3eEYLL3LMXAo",
+        authDomain: "fukuoka-travel-86358.firebaseapp.com",
+        databaseURL: "https://fukuoka-travel-86358-default-rtdb.firebaseio.com",
+        projectId: "fukuoka-travel-86358",
+        storageBucket: "fukuoka-travel-86358.firebasestorage.app",
+        messagingSenderId: "23491466822",
+        appId: "1:23491466822:web:a812682266d2d4247d1c47",
+        measurementId: "G-F0JGMPNB7"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const activeTab = ref('itinerary');
+            const selectedDay = ref(0);
+            const showInitModal = ref(false);
+            const weather = ref({ temp: '--', desc: '查詢中' });
+            
+            // 旅行基本資訊
+            const tripInfo = ref({
+                destination: '福岡',
+                startDate: '',
+                totalDays: 7
+            });
+
+            const days = ref(Array.from({length: 7}));
+            const itineraryByDay = ref({ 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
+            const expenses = ref([]);
+
+            const fetchWeather = async () => {
+                try {
+                    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.5902&longitude=130.4017&current_weather=true');
+                    const data = await res.json();
+                    weather.value.temp = Math.round(data.current_weather.temperature);
+                } catch (e) { weather.value.temp = '?'; }
+            };
+
+            const loadData = () => {
+                db.ref('travelData').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        if (data.tripInfo) {
+                            tripInfo.value = data.tripInfo;
+                            days.value = Array.from({length: tripInfo.value.totalDays});
+                        }
+                        if (data.itinerary) itineraryByDay.value = data.itinerary;
+                        if (data.expenses) expenses.value = data.expenses;
+                    } else {
+                        showInitModal.value = true;
+                    }
+                });
+            };
+
+            const saveData = () => {
+                db.ref('travelData').set({
+                    tripInfo: tripInfo.value,
+                    itinerary: itineraryByDay.value,
+                    expenses: expenses.value
+                }).then(() => alert('雲端儲存成功！'))
+                  .catch((err) => alert('儲存失敗：' + err.message));
+            };
+
+            const confirmInit = () => {
+                if(!tripInfo.value.destination || !tripInfo.value.startDate) {
+                    alert('請填寫完整資訊');
+                    return;
+                }
+                days.value = Array.from({length: tripInfo.value.totalDays});
+                showInitModal.value = false;
+                saveData();
+            };
+
+            onMounted(() => {
+                fetchWeather();
+                loadData();
+            });
+
+            const currentDayItinerary = computed(() => itineraryByDay.value[selectedDay.value] || []);
+            const addSchedule = () => {
+                if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
+                itineraryByDay.value[selectedDay.value].push({ time: '12:00', location: '' });
+            };
+            const removeSchedule = (index) => itineraryByDay.value[selectedDay.value].splice(index, 1);
+            const addExpense = () => expenses.value.push({ payer: '', amount: 0 });
+            const removeExpense = (index) => expenses.value.splice(index, 1);
+
+            const splitResults = computed(() => {
+                if (expenses.value.length === 0) return [];
+                const totals = {};
+                expenses.value.forEach(e => { if (e.payer && e.amount) totals[e.payer] = (totals[e.payer] || 0) + e.amount; });
+                const participants = Object.keys(totals);
+                if (participants.length < 2) return [];
+                const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+                const avg = sum / participants.length;
+                const balances = participants.map(p => ({ name: p, balance: totals[p] - avg }));
+                const results = [];
+                const debtors = balances.filter(b => b.balance < 0).sort((a, b) => a.balance - b.balance);
+                const creditors = balances.filter(b => b.balance > 0).sort((a, b) => b.balance - a.balance);
+                
+                let dIdx = 0, cIdx = 0;
+                let localDebtors = JSON.parse(JSON.stringify(debtors));
+                let localCreditors = JSON.parse(JSON.stringify(creditors));
+
+                while(dIdx < localDebtors.length && cIdx < localCreditors.length) {
+                    let d = localDebtors[dIdx];
+                    let c = localCreditors[cIdx];
+                    let amount = Math.min(-d.balance, c.balance);
+                    if (amount > 0) {
+                        results.push({ from: d.name, to: c.name, amount });
+                        d.balance += amount;
+                        c.balance -= amount;
+                    }
+                    if (Math.abs(d.balance) < 0.1) dIdx++;
+                    if (Math.abs(c.balance) < 0.1) cIdx++;
+                }
+                return results;
+            });
+
+            return {
+                activeTab, selectedDay, days, weather, expenses, tripInfo, showInitModal,
+                currentDayItinerary, addSchedule, removeSchedule, 
+                addExpense, removeExpense, splitResults, saveData, confirmInit
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
