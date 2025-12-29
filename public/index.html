@@ -52,4 +52,161 @@
 
     <main class="px-6 mt-6">
         <div class="flex gap-8 mb-6 border-b border-gray-100">
-            <button @click="activeTab = 'itinerary'" :
+            <button @click="activeTab = 'itinerary'" :class="activeTab === 'itinerary' ? 'border-b-2 border-[#78a3a3] text-gray-800 font-bold' : 'text-gray-400'" class="pb-3 px-1 text-sm transition-all">行程清單</button>
+            <button @click="activeTab = 'split'" :class="activeTab === 'split' ? 'border-b-2 border-[#78a3a3] text-gray-800 font-bold' : 'text-gray-400'" class="pb-3 px-1 text-sm transition-all">消費分帳</button>
+        </div>
+
+        <div v-show="activeTab === 'itinerary'" class="space-y-6">
+            <div v-for="(item, index) in currentDayItinerary" :key="index" class="bg-white p-5 rounded-3xl shadow-sm border border-gray-50 relative">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="far fa-clock text-[#78a3a3] text-xs"></i>
+                        <input v-model="item.time" type="time" class="text-sm font-bold text-[#78a3a3] bg-transparent border-none p-0 focus:ring-0">
+                    </div>
+                    <button @click="removeSchedule(index)" class="text-gray-200 hover:text-red-300">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                </div>
+                <input v-model="item.location" placeholder="輸入地點名稱..." class="w-full text-lg font-medium mb-4 border-none p-0 focus:ring-0 placeholder-gray-200">
+                <div class="flex gap-3">
+                    <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-gray-50 text-gray-500 text-center text-xs font-bold hover:bg-gray-100">地圖</a>
+                    <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-2.5 rounded-xl bg-[#78a3a3] text-white text-center text-xs font-bold shadow-sm">導航</a>
+                </div>
+            </div>
+            <button @click="addSchedule" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl text-gray-300 text-sm bg-white/50">+ 新增行程地點</button>
+        </div>
+
+        <div v-show="activeTab === 'split'" class="space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-teal-50 text-center">
+                <p class="text-[10px] text-[#78a3a3] font-bold tracking-[0.2em] mb-4 uppercase">結算摘要</p>
+                <div v-if="splitResults.length > 0" class="space-y-4">
+                    <div v-for="res in splitResults" class="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
+                        <span>{{ res.from }} → {{ res.to }}</span>
+                        <span class="font-bold text-[#78a3a3]">¥ {{ Math.round(res.amount).toLocaleString() }}</span>
+                    </div>
+                </div>
+                <p v-else class="text-gray-300 text-xs">目前無消費紀錄</p>
+            </div>
+            <div v-for="(exp, index) in expenses" :key="index" class="bg-white p-5 rounded-2xl flex items-center gap-3 shadow-sm">
+                <input v-model="exp.payer" placeholder="誰付錢" class="w-20 text-sm border-none p-0 focus:ring-0 font-bold">
+                <input v-model.number="exp.amount" type="number" placeholder="金額" class="flex-1 text-sm border-none p-0 focus:ring-0 text-[#78a3a3] font-bold">
+                <button @click="removeExpense(index)" class="text-gray-200"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <button @click="addExpense" class="w-full py-4 text-[#78a3a3] text-xs font-bold">+ 新增消費</button>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md glass-nav rounded-[2.5rem] px-10 py-4 flex justify-between items-center shadow-2xl border border-white">
+        <button @click="activeTab = 'itinerary'" :class="activeTab === 'itinerary' ? 'text-[#78a3a3]' : 'text-gray-300'"><i class="fas fa-route text-xl"></i></button>
+        <button @click="saveData" class="w-14 h-14 bg-[#78a3a3] rounded-full text-white flex items-center justify-center -translate-y-6 shadow-lg active:scale-95 transition-all">
+            <i class="fas fa-save text-lg"></i>
+        </button>
+        <button @click="activeTab = 'split'" :class="activeTab === 'split' ? 'text-[#78a3a3]' : 'text-gray-300'"><i class="fas fa-wallet text-xl"></i></button>
+    </nav>
+</div>
+
+<script>
+    // Firebase 配置 (已填入你的專屬密鑰)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKuVoCeTm9_ixV0SP8sLj3eEYLL3LMXAo",
+        authDomain: "fukuoka-travel-86358.firebaseapp.com",
+        databaseURL: "https://fukuoka-travel-86358-default-rtdb.firebaseio.com",
+        projectId: "fukuoka-travel-86358",
+        storageBucket: "fukuoka-travel-86358.firebasestorage.app",
+        messagingSenderId: "23491466822",
+        appId: "1:23491466822:web:a812682266d2d4247d1c47",
+        measurementId: "G-F0JGMPNB7"
+    };
+
+    // 初始化 Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const activeTab = ref('itinerary');
+            const selectedDay = ref(0);
+            const days = ref(Array.from({length: 7}));
+            const weather = ref({ temp: '--', desc: '福岡市區' });
+            const itineraryByDay = ref({ 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
+            const expenses = ref([]);
+
+            // 抓取天氣
+            const fetchWeather = async () => {
+                try {
+                    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.5902&longitude=130.4017&current_weather=true');
+                    const data = await res.json();
+                    weather.value.temp = Math.round(data.current_weather.temperature);
+                } catch (e) { weather.value.temp = '?'; }
+            };
+
+            // 讀取雲端資料
+            const loadData = () => {
+                db.ref('travelData').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        if (data.itinerary) itineraryByDay.value = data.itinerary;
+                        if (data.expenses) expenses.value = data.expenses;
+                    }
+                });
+            };
+
+            // 儲存至雲端
+            const saveData = () => {
+                db.ref('travelData').set({
+                    itinerary: itineraryByDay.value,
+                    expenses: expenses.value
+                }).then(() => alert('雲端儲存成功！'))
+                  .catch((err) => alert('儲存失敗：' + err.message));
+            };
+
+            onMounted(() => {
+                fetchWeather();
+                loadData();
+            });
+
+            const currentDayItinerary = computed(() => itineraryByDay.value[selectedDay.value] || []);
+            const addSchedule = () => {
+                if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
+                itineraryByDay.value[selectedDay.value].push({ time: '12:00', location: '' });
+            };
+            const removeSchedule = (index) => itineraryByDay.value[selectedDay.value].splice(index, 1);
+            const addExpense = () => expenses.value.push({ payer: '', amount: 0 });
+            const removeExpense = (index) => expenses.value.splice(index, 1);
+
+            // 分帳逻辑
+            const splitResults = computed(() => {
+                if (expenses.value.length === 0) return [];
+                const totals = {};
+                expenses.value.forEach(e => { if (e.payer) totals[e.payer] = (totals[e.payer] || 0) + e.amount; });
+                const participants = Object.keys(totals);
+                if (participants.length < 2) return [];
+                const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+                const avg = sum / participants.length;
+                const balances = participants.map(p => ({ name: p, balance: totals[p] - avg }));
+                const results = [];
+                const debtors = balances.filter(b => b.balance < 0).sort((a, b) => a.balance - b.balance);
+                const creditors = balances.filter(b => b.balance > 0).sort((a, b) => b.balance - a.balance);
+                debtors.forEach(d => {
+                    creditors.forEach(c => {
+                        if (d.balance === 0 || c.balance === 0) return;
+                        const amount = Math.min(-d.balance, c.balance);
+                        results.push({ from: d.name, to: c.name, amount });
+                        d.balance += amount; c.balance -= amount;
+                    });
+                });
+                return results;
+            });
+
+            return {
+                activeTab, selectedDay, days, weather, expenses, 
+                currentDayItinerary, addSchedule, removeSchedule, 
+                addExpense, removeExpense, splitResults, saveData
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
