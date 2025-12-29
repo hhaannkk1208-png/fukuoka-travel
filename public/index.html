@@ -45,14 +45,17 @@
             </div>
         </div>
 
-        <div class="flex gap-3 overflow-x-auto hide-scrollbar py-2">
-            <div v-for="(day, index) in days" :key="index" 
-                 @click="selectedDay = index"
-                 :class="['date-card min-w-[65px] h-[80px] flex flex-col items-center justify-center rounded-2xl cursor-pointer shadow-sm bg-white transition-all', 
-                          selectedDay === index ? 'active shadow-md' : 'text-gray-400 border border-gray-50']">
-                <span class="text-[10px] opacity-80 mb-1">第</span>
-                <span class="text-xl font-bold">{{ index + 1 }}</span>
-                <span class="text-[10px] opacity-80 mt-1">天</span>
+        <div class="flex gap-4 overflow-x-auto hide-scrollbar py-2">
+            <div v-for="(day, index) in days" :key="index" class="flex flex-col items-center gap-2 min-w-[75px]">
+                <div @click="selectedDay = index"
+                     :class="['date-card w-full h-[80px] flex flex-col items-center justify-center rounded-2xl cursor-pointer shadow-sm bg-white transition-all', 
+                              selectedDay === index ? 'active shadow-md' : 'text-gray-400 border border-gray-50']">
+                    <span class="text-[10px] opacity-80 mb-1">第</span>
+                    <span class="text-xl font-bold">{{ index + 1 }}</span>
+                    <span class="text-[10px] opacity-80 mt-1">天</span>
+                </div>
+                <input v-model="dayThemes[index]" placeholder="今日主題..." 
+                       class="w-full text-[10px] text-center bg-transparent border-none focus:ring-0 text-[#78a3a3] font-bold placeholder-gray-300">
             </div>
         </div>
     </header>
@@ -65,21 +68,21 @@
 
         <div v-show="activeTab === 'itinerary'" class="space-y-0">
             
-            <div class="bg-slate-800 text-white p-5 rounded-3xl mb-4 shadow-lg border-l-8 border-sky-400">
+            <div v-if="selectedDay === 0" class="bg-white p-5 rounded-3xl mb-4 shadow-sm border-2 border-sky-100 border-l-[12px] border-l-sky-400">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">去程航班 Flight Out</span>
+                    <span class="text-[10px] font-bold text-sky-600 uppercase tracking-widest">去程航班 Flight Out</span>
                     <i class="fas fa-plane-departure text-sky-400 text-lg"></i>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <input v-model="tripInfo.flightOutNo" placeholder="航班編號" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
-                    <input v-model="tripInfo.flightOutTerminal" placeholder="航廈" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightOutNo" placeholder="航班編號" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightOutTerminal" placeholder="航廈" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] opacity-50 ml-1">起飛</label>
-                        <input v-model="tripInfo.flightOutTimeDep" type="time" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                        <label class="text-[9px] text-gray-400 ml-1">起飛時間</label>
+                        <input v-model="tripInfo.flightOutTimeDep" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] opacity-50 ml-1">抵達</label>
-                        <input v-model="tripInfo.flightOutTimeArr" type="time" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                        <label class="text-[9px] text-gray-400 ml-1">抵達時間</label>
+                        <input v-model="tripInfo.flightOutTimeArr" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     </div>
                 </div>
             </div>
@@ -93,7 +96,7 @@
                         <option value="car">🚗</option>
                     </select>
                     <div class="flex flex-col">
-                        <input v-model="item.transitTime" placeholder="預計花費時間..." class="text-lg font-bold bg-transparent border-none p-0 w-40 text-gray-600 focus:ring-0">
+                        <input v-model="item.transitTime" placeholder="輸入時間..." class="text-lg font-bold bg-transparent border-none p-0 w-40 text-gray-600 focus:ring-0">
                         <span class="text-[10px] text-gray-400 uppercase tracking-tighter">Travel Duration</span>
                     </div>
                 </div>
@@ -108,9 +111,7 @@
                             <i class="fas fa-times-circle text-xl"></i>
                         </button>
                     </div>
-
                     <input v-model="item.location" placeholder="輸入地點名稱..." class="w-full text-xl font-bold mb-6 border-none p-0 focus:ring-0 placeholder-gray-200">
-                    
                     <div class="flex gap-3">
                         <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-3.5 rounded-2xl bg-gray-50 text-gray-500 text-center text-xs font-bold hover:bg-gray-100">查看地圖</a>
                         <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-3.5 rounded-2xl bg-[#78a3a3] text-white text-center text-xs font-bold shadow-md">立即導航</a>
@@ -120,78 +121,32 @@
 
             <button @click="addSchedule" class="w-full mt-6 py-6 border-2 border-dashed border-gray-200 rounded-[2.5rem] text-gray-400 text-sm bg-white/50 font-bold tracking-widest">+ 新增行程地點</button>
 
-            <div class="bg-slate-800 text-white p-5 rounded-3xl mt-10 shadow-lg border-l-8 border-rose-400">
+            <div v-if="selectedDay === days.length - 1" class="bg-white p-5 rounded-3xl mt-10 shadow-sm border-2 border-rose-100 border-l-[12px] border-l-rose-400">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">回程航班 Flight Back</span>
+                    <span class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">回程航班 Flight Back</span>
                     <i class="fas fa-plane-arrival text-rose-400 text-lg"></i>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <input v-model="tripInfo.flightBackNo" placeholder="航班編號" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
-                    <input v-model="tripInfo.flightBackTerminal" placeholder="航廈" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightBackNo" placeholder="航班編號" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightBackTerminal" placeholder="航廈" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] opacity-50 ml-1">起飛</label>
-                        <input v-model="tripInfo.flightBackTimeDep" type="time" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                        <label class="text-[9px] text-gray-400 ml-1">起飛時間</label>
+                        <input v-model="tripInfo.flightBackTimeDep" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] opacity-50 ml-1">抵達</label>
-                        <input v-model="tripInfo.flightBackTimeArr" type="time" class="bg-white/10 border-none rounded-xl p-3 text-sm focus:ring-0">
+                        <label class="text-[9px] text-gray-400 ml-1">抵達時間</label>
+                        <input v-model="tripInfo.flightBackTimeArr" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     </div>
                 </div>
             </div>
         </div>
 
         <div v-show="activeTab === 'split'" class="space-y-4">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-teal-50 text-center">
-                <p class="text-[10px] text-[#78a3a3] font-bold tracking-[0.2em] mb-4 uppercase">結算摘要</p>
-                <div v-if="splitResults.length > 0" class="space-y-4">
-                    <div v-for="res in splitResults" class="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
-                        <span>{{ res.from }} → {{ res.to }}</span>
-                        <span class="font-bold text-[#78a3a3]">¥ {{ Math.round(res.amount).toLocaleString() }}</span>
-                    </div>
-                </div>
-                <p v-else class="text-gray-300 text-xs">目前無消費紀錄</p>
             </div>
-            <div v-for="(exp, index) in expenses" :key="index" class="bg-white p-5 rounded-2xl flex items-center gap-3 shadow-sm">
-                <input v-model="exp.payer" placeholder="誰付錢" class="w-20 text-sm border-none p-0 focus:ring-0 font-bold">
-                <input v-model.number="exp.amount" type="number" placeholder="金額" class="flex-1 text-sm border-none p-0 focus:ring-0 text-[#78a3a3] font-bold">
-                <button @click="removeExpense(index)" class="text-gray-200"><i class="fas fa-trash-alt"></i></button>
-            </div>
-            <button @click="addExpense" class="w-full py-4 text-[#78a3a3] text-xs font-bold">+ 新增消費</button>
-        </div>
     </main>
 
     <div v-if="showInitModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button @click="showInitModal = false" class="absolute -top-2 -right-2 bg-red-500 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="text-center mb-6">
-                <i class="fas fa-plane-departure text-[#78a3a3] text-3xl mb-3"></i>
-                <h2 class="text-xl font-bold text-gray-800">開啟新旅程</h2>
-                <p class="text-xs text-gray-400">請設定您的旅行基本資訊</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">目的地</label>
-                    <input v-model="tripInfo.destination" type="text" placeholder="例如：福岡、東京..." 
-                           class="w-full mt-1 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#78a3a3]/30">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">出發日期</label>
-                    <input v-model="tripInfo.startDate" type="date" 
-                           class="w-full mt-1 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#78a3a3]/30">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">旅行天數 ({{tripInfo.totalDays}}天)</label>
-                    <input v-model.number="tripInfo.totalDays" type="range" min="1" max="14" 
-                           class="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#78a3a3] mt-4">
-                </div>
-            </div>
-            <button @click="confirmInit" class="w-full mt-8 py-4 bg-[#78a3a3] text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
-                開始規劃
-            </button>
         </div>
-    </div>
 
     <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md glass-nav rounded-[2.5rem] px-10 py-4 flex justify-between items-center shadow-2xl border border-white">
         <button @click="activeTab = 'itinerary'" :class="activeTab === 'itinerary' ? 'text-[#78a3a3]' : 'text-gray-300'"><i class="fas fa-route text-xl"></i></button>
@@ -203,6 +158,7 @@
 </div>
 
 <script>
+    // Firebase 配置保持不變...
     const firebaseConfig = {
         apiKey: "AIzaSyAKuVoCeTm9_ixV0SP8sLj3eEYLL3LMXAo",
         authDomain: "fukuoka-travel-86358.firebaseapp.com",
@@ -233,6 +189,7 @@
             });
 
             const days = ref(Array.from({length: 7}));
+            const dayThemes = ref({}); // 儲存每日主題
             const itineraryByDay = ref({ 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
             const expenses = ref([]);
 
@@ -252,6 +209,7 @@
                             tripInfo.value = data.tripInfo;
                             days.value = Array.from({length: tripInfo.value.totalDays});
                         }
+                        if (data.dayThemes) dayThemes.value = data.dayThemes;
                         if (data.itinerary) itineraryByDay.value = data.itinerary;
                         if (data.expenses) expenses.value = data.expenses;
                     } else {
@@ -263,6 +221,7 @@
             const saveData = (showMsg = false) => {
                 db.ref('travelData').set({
                     tripInfo: tripInfo.value,
+                    dayThemes: dayThemes.value,
                     itinerary: itineraryByDay.value,
                     expenses: expenses.value
                 }).then(() => { if(showMsg) alert('雲端儲存成功！'); })
@@ -283,40 +242,16 @@
             const currentDayItinerary = computed(() => itineraryByDay.value[selectedDay.value] || []);
             const addSchedule = () => {
                 if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
-                itineraryByDay.value[selectedDay.value].push({ 
-                    time: '12:00', location: '', transitType: 'walk', transitTime: ''
-                });
+                itineraryByDay.value[selectedDay.value].push({ time: '12:00', location: '', transitType: 'walk', transitTime: '' });
             };
             const removeSchedule = (index) => itineraryByDay.value[selectedDay.value].splice(index, 1);
             const addExpense = () => expenses.value.push({ payer: '', amount: 0 });
             const removeExpense = (index) => expenses.value.splice(index, 1);
 
-            const splitResults = computed(() => {
-                if (expenses.value.length === 0) return [];
-                const totals = {};
-                expenses.value.forEach(e => { if (e.payer && e.amount) totals[e.payer] = (totals[e.payer] || 0) + e.amount; });
-                const participants = Object.keys(totals);
-                if (participants.length < 2) return [];
-                const avg = Object.values(totals).reduce((a, b) => a + b, 0) / participants.length;
-                const balances = participants.map(p => ({ name: p, balance: totals[p] - avg }));
-                const results = [];
-                const d = balances.filter(b => b.balance < 0).sort((a,b)=>a.balance-b.balance);
-                const c = balances.filter(b => b.balance > 0).sort((a,b)=>b.balance-a.balance);
-                let di=0, ci=0;
-                while(di<d.length && ci<c.length) {
-                    let amt = Math.min(-d[di].balance, c[ci].balance);
-                    if(amt > 0) results.push({ from: d[di].name, to: c[ci].name, amount: amt });
-                    d[di].balance += amt; c[ci].balance -= amt;
-                    if(Math.abs(d[di].balance)<0.1) di++;
-                    if(Math.abs(c[ci].balance)<0.1) ci++;
-                }
-                return results;
-            });
-
             return {
-                activeTab, selectedDay, days, weather, expenses, tripInfo, showInitModal,
+                activeTab, selectedDay, days, weather, expenses, tripInfo, showInitModal, dayThemes,
                 currentDayItinerary, addSchedule, removeSchedule, 
-                addExpense, removeExpense, splitResults, saveData, confirmInit
+                addExpense, removeExpense, saveData, confirmInit
             };
         }
     }).mount('#app');
