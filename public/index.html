@@ -56,7 +56,7 @@
 
         <div v-show="activeTab === 'itinerary'" class="space-y-0">
             <div v-if="selectedDay === 0" class="bg-white p-5 rounded-3xl mb-4 border-2 border-sky-100 border-l-[12px] border-l-sky-400">
-                <div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-sky-600 uppercase tracking-widest">去程航班</span><i class="fas fa-plane-departure text-sky-400 text-lg"></i></div>
+                <div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-sky-600 uppercase tracking-widest">去程航班 Flight Out</span><i class="fas fa-plane-departure text-sky-400 text-lg"></i></div>
                 <div class="grid grid-cols-2 gap-3">
                     <input v-model="tripInfo.flightOutNo" placeholder="編號" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
                     <input v-model="tripInfo.flightOutTerminal" placeholder="航廈" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
@@ -78,28 +78,37 @@
                         <button @click="removeSchedule(index)" class="text-gray-200 hover:text-red-300"><i class="fas fa-times-circle text-xl"></i></button>
                     </div>
                     <div class="flex flex-col gap-1 mb-6">
-                        <input v-model="item.location" placeholder="點擊右側按鈕選取景點..." class="w-full text-xl font-bold border-none p-0 focus:ring-0">
+                        <input v-model="item.location" placeholder="輸入地點或從景點池匯入..." class="w-full text-xl font-bold border-none p-0 focus:ring-0">
                         <button @click="openSpotSelector(index)" class="w-fit mt-2 text-[10px] bg-[#78a3a3]/10 text-[#78a3a3] px-3 py-1 rounded-full font-bold">從景點池匯入資訊</button>
                     </div>
                     <div class="flex gap-3">
-                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-3.5 rounded-2xl bg-[#78a3a3] text-white text-center text-xs font-bold">開啟地圖導航</a>
+                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location)" target="_blank" class="flex-1 py-3.5 rounded-2xl bg-[#78a3a3] text-white text-center text-xs font-bold">開啟導航</a>
                     </div>
                 </div>
             </div>
             <button @click="addSchedule" class="w-full mt-6 py-6 border-2 border-dashed border-gray-200 rounded-[2.5rem] text-gray-400 text-sm font-bold">+ 新增行程地點</button>
+
+            <div v-if="selectedDay === (days.length - 1)" class="bg-white p-5 rounded-3xl mt-10 mb-6 border-2 border-rose-100 border-l-[12px] border-l-rose-400">
+                <div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">回程航班 Flight Back</span><i class="fas fa-plane-arrival text-rose-400 text-lg"></i></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input v-model="tripInfo.flightBackNo" placeholder="編號" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightBackTerminal" placeholder="航廈" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightBackTimeDep" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                    <input v-model="tripInfo.flightBackTimeArr" type="time" class="bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-0">
+                </div>
+            </div>
         </div>
 
         <div v-show="activeTab === 'spots'" class="space-y-6">
             <div class="bg-white p-6 rounded-[2rem] shadow-sm">
-                <h3 class="font-bold text-gray-800 mb-4">匯入景點</h3>
+                <h3 class="font-bold text-gray-800 mb-4 text-center">匯入新景點</h3>
                 <div class="flex gap-2">
-                    <input v-model="tempUrl" placeholder="貼上 Google Maps 連結..." class="flex-1 bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-[#78a3a3]/30">
+                    <input v-model="tempUrl" placeholder="貼上 Google Map 連結..." class="flex-1 bg-gray-50 border-none rounded-xl p-4 text-sm focus:ring-0">
                     <button @click="parseAndEditSpot" class="px-6 bg-[#78a3a3] text-white rounded-xl font-bold">解析</button>
                 </div>
             </div>
-
             <div class="grid grid-cols-2 gap-4">
-                <div v-for="(spot, sIdx) in spotPool" :key="sIdx" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 relative group flex flex-col h-full">
+                <div v-for="(spot, sIdx) in spotPool" :key="sIdx" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 flex flex-col h-full relative group">
                     <button @click="removeSpot(sIdx)" class="absolute top-2 right-2 text-gray-200 hover:text-red-400"><i class="fas fa-trash-alt text-[10px]"></i></button>
                     <div class="flex gap-1 mb-2">
                         <span :class="'category-tag cat-' + spot.category">{{ spot.category }}</span>
@@ -107,66 +116,93 @@
                     </div>
                     <div class="text-gray-800 font-bold text-sm mb-1 truncate">{{ spot.name }}</div>
                     <div class="text-[9px] text-[#78a3a3] font-bold mb-1"><i class="far fa-clock mr-1"></i>{{ spot.hours }}</div>
-                    <div class="text-[9px] text-gray-400 line-clamp-2 flex-1 mb-3">{{ spot.note || '尚無重點備註' }}</div>
+                    <div class="text-[9px] text-gray-400 line-clamp-2 flex-1 mb-3">{{ spot.note }}</div>
                     <button @click="quickAddToItinerary(spot)" class="w-full py-2 bg-gray-50 text-[#78a3a3] rounded-xl text-[10px] font-bold hover:bg-[#78a3a3] hover:text-white transition-all">加入今日行程</button>
                 </div>
             </div>
         </div>
+
+        <div v-show="activeTab === 'split'" class="space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm text-center">
+                <p class="text-[10px] text-[#78a3a3] font-bold tracking-widest mb-4">費用結算結果</p>
+                <div v-if="expenses.length > 0" class="text-sm space-y-2">
+                    <div v-for="exp in expenses" class="flex justify-between border-b border-gray-50 pb-1">
+                        <span>{{ exp.payer }}</span>
+                        <span class="font-bold">¥ {{ exp.amount }}</span>
+                    </div>
+                </div>
+                <p v-else class="text-gray-300 text-xs py-4">目前尚無消費紀錄</p>
+            </div>
+            <div v-for="(exp, idx) in expenses" :key="idx" class="bg-white p-4 rounded-2xl flex items-center gap-3">
+                <input v-model="exp.payer" placeholder="誰付的" class="w-20 bg-gray-50 rounded-lg p-2 text-xs border-none focus:ring-0">
+                <input v-model.number="exp.amount" type="number" placeholder="金額" class="flex-1 bg-gray-50 rounded-lg p-2 text-xs border-none focus:ring-0">
+                <button @click="expenses.splice(idx, 1)" class="text-gray-200"><i class="fas fa-times"></i></button>
+            </div>
+            <button @click="expenses.push({payer:'', amount:0})" class="w-full py-3 text-[#78a3a3] text-xs font-bold">+ 新增一筆消費</button>
+        </div>
     </main>
 
     <div v-if="showEditSpotModal" class="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl flex flex-col max-h-[85vh]">
-            <h2 class="text-xl font-bold mb-6 text-center text-gray-800">編輯景點資訊</h2>
-            <div class="flex-1 overflow-y-auto space-y-4 pr-2 hide-scrollbar">
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-1">景點名稱</label>
-                    <input v-model="editingSpot.name" class="w-full mt-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-[#78a3a3]/30">
+        <div class="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl space-y-4">
+            <h2 class="text-xl font-bold text-center">編輯景點詳細資訊</h2>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400">名稱</label>
+                <input v-model="editingSpot.name" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-none focus:ring-0">
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-gray-400">分類</label>
+                    <select v-model="editingSpot.category" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-none">
+                        <option value="食">食</option><option value="衣">衣</option><option value="住">住</option><option value="行">行</option>
+                    </select>
                 </div>
-                <div class="flex gap-4">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-gray-400 ml-1">分類</label>
-                        <select v-model="editingSpot.category" class="w-full mt-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-0">
-                            <option value="食">🍕 食</option><option value="衣">🛍️ 衣</option><option value="住">🏨 住</option><option value="行">🚶 行</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col justify-end pb-3">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" v-model="editingSpot.wheelchair" class="rounded text-[#78a3a3]">
-                            <span class="text-xs font-bold text-gray-600">♿ 無障礙</span>
-                        </label>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-1">營業時間</label>
-                    <input v-model="editingSpot.hours" placeholder="例如: 10:00 - 21:00" class="w-full mt-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-0">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 ml-1">景點重點 / 筆記</label>
-                    <textarea v-model="editingSpot.note" rows="3" placeholder="例如: 必吃明太子、人很多需預約..." class="w-full mt-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-0 text-sm"></textarea>
+                <div class="flex items-end pb-3">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold">
+                        <input type="checkbox" v-model="editingSpot.wheelchair"> ♿ 無障礙
+                    </label>
                 </div>
             </div>
-            <div class="flex gap-3 mt-8">
-                <button @click="showEditSpotModal = false" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold">取消</button>
-                <button @click="saveEditingSpot" class="flex-1 py-4 bg-[#78a3a3] text-white rounded-2xl font-bold shadow-lg shadow-teal-100">加入景點池</button>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400">營業時間</label>
+                <input v-model="editingSpot.hours" placeholder="10:00 - 20:00" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-none">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400">筆記重點</label>
+                <textarea v-model="editingSpot.note" rows="2" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-none"></textarea>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button @click="showEditSpotModal = false" class="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-400">取消</button>
+                <button @click="saveEditingSpot" class="flex-1 py-3 bg-[#78a3a3] rounded-xl font-bold text-white">確認加入</button>
             </div>
         </div>
     </div>
 
     <div v-if="showSelectorModal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white w-full max-h-[70vh] rounded-[2.5rem] p-8 shadow-2xl flex flex-col">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">選取匯入景點</h2>
-                <button @click="showSelectorModal = false"><i class="fas fa-times text-xl text-gray-300"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-3 hide-scrollbar">
-                <div v-for="spot in spotPool" @click="selectSpot(spot)" class="p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-teal-50 border border-transparent hover:border-[#78a3a3]">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-gray-800">{{ spot.name }}</span>
-                        <span :class="'category-tag cat-' + spot.category">{{ spot.category }}</span>
+        <div class="bg-white w-full max-h-[70vh] rounded-[2.5rem] p-8 flex flex-col">
+            <h2 class="text-xl font-bold mb-4">選取匯入景點</h2>
+            <div class="overflow-y-auto space-y-3 hide-scrollbar flex-1">
+                <div v-for="spot in spotPool" @click="selectSpot(spot)" class="p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-teal-50 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-gray-800">{{ spot.name }}</div>
+                        <div class="text-[10px] text-gray-400">{{ spot.note }}</div>
                     </div>
-                    <div class="text-[10px] text-gray-400">{{ spot.note }}</div>
+                    <span :class="'category-tag cat-' + spot.category">{{ spot.category }}</span>
                 </div>
             </div>
+            <button @click="showSelectorModal = false" class="mt-4 py-3 bg-gray-100 rounded-xl font-bold">關閉</button>
+        </div>
+    </div>
+
+    <div v-if="showInitModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full rounded-[2.5rem] p-8">
+            <h2 class="text-xl font-bold mb-6 text-center">旅程基本設定</h2>
+            <div class="space-y-4">
+                <input v-model="tripInfo.destination" placeholder="目的地" class="w-full bg-gray-50 p-4 rounded-xl border-none">
+                <input v-model="tripInfo.startDate" type="date" class="w-full bg-gray-50 p-4 rounded-xl border-none">
+                <div class="text-xs text-gray-400 ml-2">天數: {{ tripInfo.totalDays }}</div>
+                <input v-model.number="tripInfo.totalDays" type="range" min="1" max="14" class="w-full accent-[#78a3a3]">
+            </div>
+            <button @click="showInitModal = false; saveData(false)" class="w-full mt-8 py-4 bg-[#78a3a3] text-white rounded-2xl font-bold">儲存設定</button>
         </div>
     </div>
 
@@ -179,8 +215,18 @@
 </div>
 
 <script>
-    // Firebase 配置 (請保留原本的)
-    const firebaseConfig = { ... }; 
+    // --- 重要：Firebase 設定 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKuVoCeTm9_ixV0SP8sLj3eEYLL3LMXAo",
+        authDomain: "fukuoka-travel-86358.firebaseapp.com",
+        databaseURL: "https://fukuoka-travel-86358-default-rtdb.firebaseio.com",
+        projectId: "fukuoka-travel-86358",
+        storageBucket: "fukuoka-travel-86358.firebasestorage.app",
+        messagingSenderId: "23491466822",
+        appId: "1:23491466822:web:a812682266d2d4247d1c47",
+        measurementId: "G-F0JGMPNB7"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const { createApp, ref, computed, onMounted } = Vue;
@@ -198,30 +244,22 @@
             const spotPool = ref([]);
             const targetScheduleIndex = ref(null);
 
-            const tripInfo = ref({ destination: '福岡', startDate: '', totalDays: 7 });
+            const tripInfo = ref({ destination: '福岡', startDate: '', totalDays: 7, 
+                                   flightOutNo: '', flightOutTerminal: '', flightOutTimeDep: '', flightOutTimeArr: '',
+                                   flightBackNo: '', flightBackTerminal: '', flightBackTimeDep: '', flightBackTimeArr: '' });
             const dayThemes = ref({});
             const itineraryByDay = ref({ 0: [] });
             const expenses = ref([]);
 
-            // 解析並開啟編輯視窗
             const parseAndEditSpot = () => {
                 if (!tempUrl.value) return;
                 try {
                     const url = new URL(tempUrl.value);
                     const rawName = decodeURIComponent(url.pathname.split('/')[3] || '新景點').replace(/\+/g, ' ');
-                    
-                    // 初始化編輯對象
-                    editingSpot.value = {
-                        name: rawName,
-                        category: '食',
-                        hours: '10:00 - 20:00',
-                        note: '',
-                        wheelchair: false,
-                        url: tempUrl.value
-                    };
+                    editingSpot.value = { name: rawName, category: '食', hours: '10:00 - 20:00', note: '', wheelchair: false };
                     showEditSpotModal.value = true;
                     tempUrl.value = '';
-                } catch(e) { alert('無效的網址格式'); }
+                } catch(e) { alert('網址格式錯誤'); }
             };
 
             const saveEditingSpot = () => {
@@ -230,37 +268,28 @@
             };
 
             const removeSpot = (index) => spotPool.value.splice(index, 1);
-
-            const openSpotSelector = (index) => {
-                targetScheduleIndex.value = index;
-                showSelectorModal.value = true;
-            };
-
+            const openSpotSelector = (index) => { targetScheduleIndex.value = index; showSelectorModal.value = true; };
             const selectSpot = (spot) => {
-                const dayItinerary = itineraryByDay.value[selectedDay.value];
-                dayItinerary[targetScheduleIndex.value].location = spot.name;
-                // 自動將重點筆記補在後方(可選)
+                if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
+                itineraryByDay.value[selectedDay.value][targetScheduleIndex.value].location = spot.name;
                 showSelectorModal.value = false;
             };
 
             const quickAddToItinerary = (spot) => {
                 if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
-                itineraryByDay.value[selectedDay.value].push({
-                    time: '12:00', location: spot.name, transitType: 'walk', transitTime: ''
-                });
-                alert(`已將「${spot.name}」加入今日行程！`);
+                itineraryByDay.value[selectedDay.value].push({ time: '12:00', location: spot.name, transitType: 'walk', transitTime: '' });
+                alert('已加入行程！');
             };
 
-            // 資料存取 (保持原本邏輯)
             const loadData = () => {
                 db.ref('travelData').on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        if (data.tripInfo) tripInfo.value = data.tripInfo;
-                        if (data.dayThemes) dayThemes.value = data.dayThemes;
-                        if (data.itinerary) itineraryByDay.value = data.itinerary;
-                        if (data.expenses) expenses.value = data.expenses;
-                        if (data.spotPool) spotPool.value = data.spotPool;
+                        tripInfo.value = data.tripInfo || tripInfo.value;
+                        dayThemes.value = data.dayThemes || {};
+                        itineraryByDay.value = data.itinerary || { 0: [] };
+                        expenses.value = data.expenses || [];
+                        spotPool.value = data.spotPool || [];
                     } else { showInitModal.value = true; }
                 });
             };
@@ -272,11 +301,11 @@
                 }).then(() => { if(showMsg) alert('雲端儲存成功！'); });
             };
 
-            const confirmInit = () => { showInitModal.value = false; saveData(false); };
             const addSchedule = () => {
                 if (!itineraryByDay.value[selectedDay.value]) itineraryByDay.value[selectedDay.value] = [];
                 itineraryByDay.value[selectedDay.value].push({ time: '12:00', location: '', transitType: 'walk', transitTime: '' });
             };
+
             const removeSchedule = (index) => itineraryByDay.value[selectedDay.value].splice(index, 1);
 
             onMounted(() => { loadData(); });
@@ -287,7 +316,7 @@
                 showSelectorModal, openSpotSelector, selectSpot, quickAddToItinerary,
                 parseAndEditSpot, saveEditingSpot, removeSpot, addSchedule, removeSchedule, 
                 currentDayItinerary: computed(() => itineraryByDay.value[selectedDay.value] || []),
-                saveData, confirmInit, showInitModal
+                saveData, showInitModal, expenses
             };
         }
     }).mount('#app');
